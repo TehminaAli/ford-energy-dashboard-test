@@ -1,0 +1,31 @@
+{
+    "name": "energy-dashboard-mock-server",
+    "version": "1.0.0",
+    "description": "Mock WebSocket server for Ford Energy Dashboard technical test",
+    "main": "dist/mock-server.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/mock-server.js",
+        "dev": "ts-node src/mock-server.ts",
+        "generate-data": "ts-node src/generate-data.ts"
+    },
+    "keywords": [
+        "websocket",
+        "energy",
+        "dashboard",
+        "mock-server"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "seedrandom": "^3.0.5",
+        "ws": "^8.16.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "@types/seedrandom": "^3.0.8",
+        "@types/ws": "^8.5.10",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.3.3"
+    }
+}
