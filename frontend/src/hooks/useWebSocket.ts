@@ -1,68 +1,83 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { EnergyReading, ConnectionStatus } from '../types';
 
-export function useWebSocket(
-  url: string,
-  onMessage: (reading: EnergyReading) => void
-) {
-  const [status, setStatus] = useState<ConnectionStatus>('connecting');
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+const WS_URL = 'ws://localhost:8080';
+const MAX_RECONNECT = 5;
+
+// Custom hook for WebSocket connection with auto-reconnect
+export function useWebSocket(onMessage: (reading: EnergyReading) => void) {
+  const [status, setStatus] = useState<ConnectionStatus>('CONNECTING');
+  const [attempts, setAttempts] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<number | undefined>(undefined);
+  const reconnectAttemptsRef = useRef(0);
 
-  const connect = useCallback(() => {
-    try {
-      const ws = new WebSocket(url);
-      wsRef.current = ws;
+  useEffect(() => {
+    let isMounted = true;
 
+    const connect = () => {
+      if (!isMounted) return;
+
+      const ws = new WebSocket(WS_URL);
+      
+      // Connection established
       ws.onopen = () => {
-        setStatus('connected');
-        setReconnectAttempts(0);
+        if (!isMounted) return;
+        setStatus('CONNECTED');
+        setAttempts(0);
+        reconnectAttemptsRef.current = 0;
       };
 
-      ws.onmessage = (event) => {
+      // Handle incoming messages
+      ws.onmessage = (e) => {
+        if (!isMounted) return;
         try {
-          const reading = JSON.parse(event.data) as EnergyReading;
-          onMessage(reading);
-        } catch (error) {
-          console.error('Failed to parse message:', error);
+          onMessage(JSON.parse(e.data));
+        } catch (err) {
+          console.error('Parse error:', err);
         }
       };
 
       ws.onerror = () => {
-        setStatus('error');
+        if (!isMounted) return;
+        setStatus('ERROR');
       };
 
+      // Handle disconnection with exponential backoff
       ws.onclose = () => {
-        setStatus('disconnected');
-
-        // Exponential backoff: 1s, 2s, 4s, 8s, 16s max
-        const delays = [1000, 2000, 4000, 8000, 16000];
-        const delay = delays[Math.min(reconnectAttempts, delays.length - 1)];
-
-        reconnectTimeoutRef.current = setTimeout(() => {
-          setReconnectAttempts(prev => prev + 1);
-          connect();
-        }, delay);
+        if (!isMounted) return;
+        setStatus('DISCONNECTED');
+        
+        if (reconnectAttemptsRef.current < MAX_RECONNECT) {
+          const delay = 1000 * Math.pow(2, reconnectAttemptsRef.current);
+          reconnectAttemptsRef.current++;
+          setAttempts(reconnectAttemptsRef.current);
+          
+          timeoutRef.current = window.setTimeout(() => {
+            if (isMounted) {
+              setStatus('CONNECTING');
+              connect();
+            }
+          }, delay);
+        }
       };
-    } catch (error) {
-      console.error('WebSocket connection error:', error);
-      setStatus('error');
-    }
-  }, [url, onMessage, reconnectAttempts]);
 
-  useEffect(() => {
+      wsRef.current = ws;
+    };
+
     connect();
 
+    // Cleanup on unmount
     return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
+      isMounted = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
       if (wsRef.current) {
         wsRef.current.close();
       }
     };
-  }, [connect]);
+  }, []); // Empty dependency array - only run once!
 
-  return { status, reconnectAttempts };
+  return { status, attempts };
 }

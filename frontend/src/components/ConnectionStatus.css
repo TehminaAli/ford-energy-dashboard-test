@@ -18,12 +18,12 @@
   color: #856404;
 }
 
-.connection-status.error {
+.connection-status.disconnected {
   background: #f8d7da;
   color: #721c24;
 }
 
-.connection-status.disconnected {
+.connection-status.error {
   background: #f8d7da;
   color: #721c24;
 }
