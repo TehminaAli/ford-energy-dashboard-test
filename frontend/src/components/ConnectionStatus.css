@@ -1,0 +1,43 @@
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.connection-status.connected {
+  background: #d4edda;
+  color: #155724;
+}
+
+.connection-status.connecting {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.connection-status.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.connection-status.disconnected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-icon {
+  font-size: 1rem;
+}
+
+/* Pulsing animation for connecting state */
+.connecting .status-icon {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
